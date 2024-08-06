@@ -1,0 +1,108 @@
+name: Build
+
+on:
+  workflow_call:
+
+jobs:
+  build-flutter:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Need full history to update last modified time.
+      - name: git-restore-mtime
+        uses: chetan/git-restore-mtime-action@v1
+        
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.22.2
+
+      - name: Verify Flutter Installation
+        run: flutter doctor -v
+
+      - name: Flutter Clean
+        working-directory: ./frontend
+        run: flutter clean
+
+      - name: Fetch Dependencies
+        working-directory: ./frontend
+        run: flutter pub get
+
+      - name: Build
+        working-directory: ./frontend
+        run: dart run build_runner build && flutter build web
+
+      - name: Upload Frontend Dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: "frontend/build/web"
+
+      - name: Copy to Backend
+        working-directory: ./frontend
+        run: "(rm -r ../backend/core/src/main/resources/web || true) && cp -r build/web ../backend/core/src/main/resources"
+
+      - name: Setup Java
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '17'
+          distribution: 'graalvm-community'
+          
+
+      - name: Setup SBT
+        run: |
+          mkdir -p $HOME/bin/sbt
+          set -eux && curl --fail --silent --location --retry 3 https://github.com/sbt/sbt/releases/download/v1.10.1/sbt-1.10.1.tgz | gunzip | tar x -C $HOME/bin/sbt
+          echo "$HOME/bin/sbt" >> $GITHUB_PATH
+
+      - name: Cache sbt
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.coursier/cache/v1
+            ~/.cache/coursier/v1
+            ~/AppData/Local/Coursier/Cache/v1
+            ~/Library/Caches/Coursier/v1
+          key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+
+      - name: Cache project
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/target/**
+            !**/test-results/**
+          key: ${{ format('{0}-project-{1}-{2}', runner.os, github.base_ref, github.run_number) }}
+
+      - name: Compile
+        working-directory: ./backend
+        run: sbt Test/compile
+
+      - name: Tests and Checks
+        working-directory: ./backend
+        run: sbt checkPRTestQuick
+
+      - name: Publish Local
+        working-directory: ./backend
+        run: sbt publishLocal
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Test Results
+          path: "**/test-reports/*.xml"
+      
+      - name: Cleanup before cache
+        shell: bash
+        run: |
+          rm -rf "$HOME/.ivy2/local" || true
+          find $HOME/Library/Caches/Coursier/v1        -name "ivydata-*.properties" -delete || true
+          find $HOME/.ivy2/cache                       -name "ivydata-*.properties" -delete || true
+          find $HOME/.cache/coursier/v1                -name "ivydata-*.properties" -delete || true
+          find $HOME/.sbt                              -name "*.lock"               -delete || true

@@ -1,0 +1,11 @@
+{
+  "name": "block-counter",
+  "version": "1.0.0",
+  "description": "Counts the number of blocks processed by blockchain",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.7"
+  }
+}
