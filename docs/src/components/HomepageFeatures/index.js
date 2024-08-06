@@ -20,16 +20,16 @@ const FeatureList = [
     ),
   },
   {
-    title: 'Pay-per-Usage',
+    title: 'Minimal Dev-Ops',
     description: (
       <>
-        Pay only for what you use and nothing more.  We handle the rest of the infrastructure.
+        Function orchestration is built-in.
       </>
     ),
   },
 ];
 
-function Feature({title, description}) {
+function Feature({ title, description }) {
   return (
     <div className={clsx('col col--4')}>
       <div className="text--center padding-horiz--md">
