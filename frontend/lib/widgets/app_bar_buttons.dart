@@ -25,5 +25,5 @@ class DocsButton extends StatelessWidget {
         tooltip: "Docs",
       );
 
-  static const docsUrlBase = 'https://docs.chainless.dev';
+  static const docsUrlBase = 'https://seancheatham.github.io/chainless';
 }
