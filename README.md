@@ -1,7 +1,7 @@
-# Chainless
-"Serverless Functions" but for blockchain events. And you need a server.
+![Chainless Logo](./docs/static/img/logo.png)
+"Serverless Functions" for blockchain events. But you need a server. And a blockchain. So it's neither serverless nor chainless. Modern branding is wonderful.
 
-It's a service that runs in Docker. You send some function code to an API endpoint, and the backend executes it any time there is a new block. Functions can either be Temporary or Persistent. Temporary functions exist only for the lifetime of the connection to the HTTP endpoint. Persistent functions run in the background even when you close your browser.
+Smash some code into your keyboard, click submit, and watch as Chainless magically runs your beautifully crafted function against blockchain blocks. Functions can either be Temporary or Persistent. Temporary functions exist only for the lifetime of the connection to the HTTP endpoint. Persistent functions run in the background even when you close your browser.
 
 ## Prerequisites
 - Electricity
@@ -23,7 +23,7 @@ It's a service that runs in Docker. You send some function code to an API endpoi
      - At least one chain must be configured.
    - `--privileged` is needed to run persistent functions within Docker containers.
      - This flag introduces some [security risks](https://docs.docker.com/reference/cli/docker/container/run/#privileged). Use it if you prefer to use gasoline to start campfires.
-     - Alternatively, you may install [sysbox](https://github.com/nestybox/sysbox) for better security. Use it if you drive below the posted speed limit on roadways.
+     - Alternatively, you may install [sysbox](https://github.com/nestybox/sysbox) for better security. Use it if you drive the posted speed limit on roadways.
 1. Open [http://localhost:42069](http://localhost:42069) in your cat picture viewer/web browser
 
 ## Supported Blockchains
@@ -43,6 +43,6 @@ It's a service that runs in Docker. You send some function code to an API endpoi
   - No.
 
 ## Disclaimers
-- This project is still in alpha. It will move into beta/production state once there is sufficient test coverage, meaning it'll forever be in alpha state.
+- This project is still in alpha. It will move into beta/production state once there is sufficient test coverage, so it'll probably never leave alpha.
 - The project author trusts the Ballmer Peak and is probably there right now.
 - The API and frontend are **not** password-protected. If the port can be accessed, so can the rest of the application.
