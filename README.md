@@ -1,4 +1,4 @@
-![Chainless Logo](./docs/static/img/logo.png)
+![Chainless](./docs/static/img/logo.png)
 "Serverless Functions" for blockchain events. But you need a server. And a blockchain. So it's neither serverless nor chainless. Modern branding is wonderful.
 
 Smash some code into your keyboard, click submit, and watch as Chainless magically runs your beautifully crafted function against blockchain blocks. Functions can either be Temporary or Persistent. Temporary functions exist only for the lifetime of the connection to the HTTP endpoint. Persistent functions run in the background even when you close your browser.
@@ -24,7 +24,8 @@ Smash some code into your keyboard, click submit, and watch as Chainless magical
    - `--privileged` is needed to run persistent functions within Docker containers.
      - This flag introduces some [security risks](https://docs.docker.com/reference/cli/docker/container/run/#privileged). Use it if you prefer to use gasoline to start campfires.
      - Alternatively, you may install [sysbox](https://github.com/nestybox/sysbox) for better security. Use it if you drive the posted speed limit on roadways.
-1. Open [http://localhost:42069](http://localhost:42069) in your cat picture viewer/web browser
+   - If you like to live on the edge, you can use the `seancheatham/chainless:dev` image tag to try the newest bugs and features.
+1. Open [http://localhost:42069](http://localhost:42069) in your cat video browser
 
 ## Supported Blockchains
 - Bitcoin
@@ -45,4 +46,5 @@ Smash some code into your keyboard, click submit, and watch as Chainless magical
 ## Disclaimers
 - This project is still in alpha. It will move into beta/production state once there is sufficient test coverage, so it'll probably never leave alpha.
 - The project author trusts the Ballmer Peak and is probably there right now.
+- Everything is subject to change. I make no guarantees of backwards compatibility because that would require remembering what I did yesterday. (See above)
 - The API and frontend are **not** password-protected. If the port can be accessed, so can the rest of the application.
