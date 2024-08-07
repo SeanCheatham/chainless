@@ -58,7 +58,7 @@ See the corresponding documentation for your preferred language/runtime.
 - [JVM](persistent-functions/jvm)
 
 ### Deploy the Function
-Navigate to the [Chainless App](https://app.chainless.dev).  Open the menu in the bottom-right corner, and select "Create Persistent Function".
+Navigate to the [Chainless App](http://localhost:42069).  Open the menu in the bottom-right corner, and select "Create Persistent Function".
 
 #### Function Info
 On the first page, specify your `Function Name`, `Language`, and `Blockchains`.

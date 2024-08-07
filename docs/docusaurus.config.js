@@ -66,8 +66,8 @@ const config = {
             label: 'Tutorial',
           },
           {
-            href: 'https://github.com/SeanCheatham/chainless',
-            label: 'GitHub',
+            href: 'http://localhost:42069',
+            label: 'App',
             position: 'right',
           },
         ],
@@ -100,10 +100,6 @@ const config = {
           {
             title: 'More',
             items: [
-              {
-                label: 'Home',
-                href: 'https://chainless.dev',
-              },
               {
                 label: 'GitHub',
                 href: 'https://github.com/SeanCheatham/chainless',
