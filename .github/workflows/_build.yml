@@ -95,7 +95,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Test Results
+          name: sbt-test-results
           path: "**/test-reports/*.xml"
       
       - name: Cleanup before cache
