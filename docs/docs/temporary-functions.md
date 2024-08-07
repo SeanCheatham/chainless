@@ -4,7 +4,7 @@ These functions only runs while the connection is open.  Once closed, the functi
 ## Creating a Temporary Function
 
 ### Prepare
-Login to the [Chainless App](https://app.chainless.dev).  Then, click the button in the bottom-right corner to expand the menu.  Select "Create Temporary Function".
+Open the [Chainless App](http://localhost:42069).  Then, click the button in the bottom-right corner to expand the menu.  Select "Create Temporary Function".
 
 At this page, you can write your function code as a single JavaScript file.  Temporary functions may not include additional dependencies, so they are limited in functionality.  Edit the code box to implement your function.
 
