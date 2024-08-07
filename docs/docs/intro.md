@@ -7,12 +7,13 @@ sidebar_position: 1
 ## Getting Started
 ### Run Blockchain Nodes
 Chainless requires access to at least one blockchain node RPC server. You can either run the nodes yourself or use a 3rd party service.
-**Self-Hosted Nodes**
+
+#### Self-Hosted Nodes
 - [Bitcoin](https://bitcoin.org/en/download)
 - [Ethereum](https://ethereum.org/en/developers/docs/nodes-and-clients/run-a-node/)
-**3rd-Party Services**
-- [GetBlock](https://getblock.io/)
 
+#### 3rd-Party Services
+- [GetBlock](https://getblock.io/)
 
 ### Install Chainless
 1. Install [Docker](https://docs.docker.com/engine/install/)
