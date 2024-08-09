@@ -48,3 +48,5 @@ Different blockchains have different formats for their blocks and transactions. 
 
 - See [Bitcoin block schema](https://developer.bitcoin.org/reference/rpc/getblock.html#result-for-verbosity-2)
 - See [Ethereum block schema](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbyhash)
+- See [Apparatus block schema](https://github.com/Topl/protobuf-specs/blob/main/proto/node/models/block.proto#L36)
+  - The protobuf representation is converted into JSON

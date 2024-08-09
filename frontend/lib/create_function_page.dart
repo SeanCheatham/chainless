@@ -26,7 +26,7 @@ class CreateFunctionPage extends StatefulWidget {
 class CreateFunctionPageState extends State<CreateFunctionPage> {
   String name = "MyFunction";
   String language = "js";
-  List<String> chains = ["bitcoin", "ethereum"];
+  List<String> chains = ["bitcoin", "ethereum", "apparatus"];
   DateTime? initTime;
   String config = "{}";
   late EditorModel configEditorModel;

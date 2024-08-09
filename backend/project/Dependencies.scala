@@ -69,6 +69,12 @@ object Dependencies {
   val sqlite = Seq(
     "org.xerial" % "sqlite-jdbc" % "3.46.0.0"
   )
+
+  val apparatus = Seq(
+    "co.topl" %% "protobuf-fs2" % "2.0.0-beta3",
+    "com.thesamet.scalapb" %% "scalapb-json4s" % "0.12.1",
+    "io.grpc" % "grpc-netty-shaded" % "1.66.0"
+  )
 }
 
 object Versions {

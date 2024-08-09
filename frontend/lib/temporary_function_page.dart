@@ -22,7 +22,7 @@ class _TemporaryFunctionPageState extends State<TemporaryFunctionPage> {
   String code = _code;
   DateTime? initTime;
   late EditorModel model;
-  List<String> chains = ["bitcoin", "ethereum"];
+  List<String> chains = ["bitcoin", "ethereum", "apparatus"];
 
   @override
   void initState() {
