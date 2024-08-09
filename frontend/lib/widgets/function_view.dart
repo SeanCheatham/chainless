@@ -330,6 +330,8 @@ IconData chainIcon(String chain, {Color? color, double? size}) {
       return FontAwesomeIcons.bitcoin;
     case "ethereum":
       return FontAwesomeIcons.ethereum;
+    case "apparatus":
+      return FontAwesomeIcons.arrowRightToBracket;
     default:
       return FontAwesomeIcons.question;
   }

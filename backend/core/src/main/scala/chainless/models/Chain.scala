@@ -21,7 +21,10 @@ object Chain:
   case object Ethereum extends Chain:
     val name: String = "ethereum"
 
-  val all: List[Chain] = List(Bitcoin, Ethereum)
+  case object Apparatus extends Chain:
+    val name: String = "apparatus"
+
+  val all: List[Chain] = List(Bitcoin, Ethereum, Apparatus)
 
   given Encoder[Chain] = _.toString.asJson
   given Decoder[Chain] = Decoder[String].emap(parse(_).toRight("Unknown chain"))

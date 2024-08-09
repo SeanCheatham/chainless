@@ -48,7 +48,8 @@ lazy val core = project
         Dependencies.circe ++
         Dependencies.graalVM ++
         Dependencies.docker ++
-        Dependencies.sqlite,
+        Dependencies.sqlite ++
+        Dependencies.apparatus,
     dependencyOverrides ++= Seq(
       "org.typelevel" %% "cats-parse" % "1.0.0"
     )

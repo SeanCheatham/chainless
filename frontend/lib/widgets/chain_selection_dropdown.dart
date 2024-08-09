@@ -25,4 +25,5 @@ class ChainSelectionDropdown extends StatelessWidget {
 const _selectableChainsItems = [
   ValueItem(label: "bitcoin", value: "bitcoin"),
   ValueItem(label: "ethereum", value: "ethereum"),
+  ValueItem(label: "apparatus", value: "apparatus"),
 ];

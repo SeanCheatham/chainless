@@ -5,10 +5,10 @@ import cats.data.{Chain, NonEmptyChain}
 import cats.effect.kernel.Ref
 import cats.effect.{IO, Resource, ResourceApp}
 import cats.implicits.*
-import chainless.db.{FunctionInvocationsDb, *}
+import chainless.db.*
 import chainless.models.*
 import chainless.replicator.Replicator
-import chainless.replicator.provider.{BitcoinProvider, EthereumProvider}
+import chainless.replicator.provider.*
 import chainless.runner.persistent.*
 import chainless.runner.temporary.*
 import chainless.utils.Healthcheck
@@ -53,10 +53,9 @@ object ChainlessMain extends ResourceApp.Forever {
         newBlocksTopic.subscribeUnbounded
       )
       jobProcessor <- makeJobProcessor(args, objectStore, functionsDb, functionInvocationsDb, blocksDb)
-      bitcoinProvider <- args.bitcoinRpcAddress.traverse(BitcoinProvider.make[F])
-      ethereumProvider <- args.ethereumRpcAddress.traverse(EthereumProvider.make[F])
-      providers = (bitcoinProvider.toList ++ ethereumProvider).map(provider => provider.chain -> provider).toMap
-      _ <- IO.raiseWhen(providers.isEmpty)(new IllegalArgumentException("No chains configured")).toResource
+      providers <- Providers
+        .make[F](args.bitcoinRpcAddress, args.ethereumRpcAddress, args.apparatusRpcAddress)
+        .map(_.toList.map(provider => provider.chain -> provider).toMap)
       replicator = new Replicator[F](blocksDb, providers, objectStore, newBlocksTopic.publish1(_).void)
       dispatcher = new JobDispatcher[F](newBlocksTopic.subscribeUnbounded, functionsDb, jobProcessor)
       _ <- healthcheck.setReadiness(Healthcheck.Healthy()).toResource
@@ -115,6 +114,7 @@ case class RunnerManagerArgs(
     dataDir: String = "/app/data",
     bitcoinRpcAddress: Option[String] = None,
     ethereumRpcAddress: Option[String] = None,
+    apparatusRpcAddress: Option[String] = None,
     bindHost: String = "0.0.0.0",
     bindPort: Int = 42069,
     runnerApiBindPortStart: Int = 8093,
