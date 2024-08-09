@@ -11,6 +11,7 @@ Chainless requires access to at least one blockchain node RPC server. You can ei
 #### Self-Hosted Nodes
 - [Bitcoin](https://bitcoin.org/en/download)
 - [Ethereum](https://ethereum.org/en/developers/docs/nodes-and-clients/run-a-node/)
+- [Apparatus](https://topl.github.io/Bifrost/docs/current/reference/getting-started)
 
 #### 3rd-Party Services
 - [GetBlock](https://getblock.io/)
@@ -18,8 +19,8 @@ Chainless requires access to at least one blockchain node RPC server. You can ei
 ### Install Chainless
 1. `docker volume create chainless_data`
    - Creates a persistent location for saving block and function data
-1. `docker run -d --name chainless --restart=always -p 42069:42069 -v chainless_data:/app --privileged seancheatham/chainless:latest --ethereum-rpc-address $ETHEREUM_RPC_ADDRESS --bitcoin-rpc-address $BITCOIN_RPC_ADDRESS`
-   - Substitute your own ethereum and bitcoin node addresses.
+1. `docker run -d --name chainless --restart=always -p 42069:42069 -v chainless_data:/app --privileged seancheatham/chainless:latest --ethereum-rpc-address $ETHEREUM_RPC_ADDRESS --bitcoin-rpc-address $BITCOIN_RPC_ADDRESS --apparatus-rpc-address $APPARATUS_RPC_ADDRESS`
+   - Substitute your own ethereum, bitcoin, and/or apparatus node addresses.
      - If you don't have one and don't mind centralization, you can use a service like [GetBlock](https://getblock.io/)
      - If you don't have one and need guaranteed chain integrity, you need to install and run your own nodes.
      - At least one chain must be configured.
