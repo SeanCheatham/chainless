@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.1.1">
 <title data-rh="true">Chainless Docs | Chainless</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://seancheatham.github.io/chainless/docs/intro"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Chainless Docs | Chainless"><meta data-rh="true" name="description" content="Getting Started"><meta data-rh="true" property="og:description" content="Getting Started"><link data-rh="true" rel="icon" href="/chainless/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://seancheatham.github.io/chainless/docs/intro"><link data-rh="true" rel="alternate" href="https://seancheatham.github.io/chainless/docs/intro" hreflang="en"><link data-rh="true" rel="alternate" href="https://seancheatham.github.io/chainless/docs/intro" hreflang="x-default"><link rel="stylesheet" href="/chainless/assets/css/styles.2693d822.css">
-<script src="/chainless/assets/js/runtime~main.64508c96.js" defer="defer"></script>
+<script src="/chainless/assets/js/runtime~main.9775327c.js" defer="defer"></script>
 <script src="/chainless/assets/js/main.b0fc0872.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -16,6 +16,7 @@
 <ul>
 <li><a href="https://bitcoin.org/en/download" target="_blank" rel="noopener noreferrer">Bitcoin</a></li>
 <li><a href="https://ethereum.org/en/developers/docs/nodes-and-clients/run-a-node/" target="_blank" rel="noopener noreferrer">Ethereum</a></li>
+<li><a href="https://topl.github.io/Bifrost/docs/current/reference/getting-started" target="_blank" rel="noopener noreferrer">Apparatus</a></li>
 </ul>
 <h4 class="anchor anchorWithStickyNavbar_LWe7" id="3rd-party-services">3rd-Party Services<a href="#3rd-party-services" class="hash-link" aria-label="Direct link to 3rd-Party Services" title="Direct link to 3rd-Party Services">​</a></h4>
 <ul>
@@ -28,9 +29,9 @@
 <li>Creates a persistent location for saving block and function data</li>
 </ul>
 </li>
-<li><code>docker run -d --name chainless --restart=always -p 42069:42069 -v chainless_data:/app --privileged seancheatham/chainless:latest --ethereum-rpc-address $ETHEREUM_RPC_ADDRESS --bitcoin-rpc-address $BITCOIN_RPC_ADDRESS</code>
+<li><code>docker run -d --name chainless --restart=always -p 42069:42069 -v chainless_data:/app --privileged seancheatham/chainless:latest --ethereum-rpc-address $ETHEREUM_RPC_ADDRESS --bitcoin-rpc-address $BITCOIN_RPC_ADDRESS --apparatus-rpc-address $APPARATUS_RPC_ADDRESS</code>
 <ul>
-<li>Substitute your own ethereum and bitcoin node addresses.<!-- -->
+<li>Substitute your own ethereum, bitcoin, and/or apparatus node addresses.<!-- -->
 <ul>
 <li>If you don&#x27;t have one and don&#x27;t mind centralization, you can use a service like <a href="https://getblock.io/" target="_blank" rel="noopener noreferrer">GetBlock</a></li>
 <li>If you don&#x27;t have one and need guaranteed chain integrity, you need to install and run your own nodes.</li>
