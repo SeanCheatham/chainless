@@ -78,7 +78,7 @@ class DockerDriver[F[_]: Async: Files](
                           HostConfig
                             .newHostConfig()
                             .withBinds(Bind.parse(s"$codeDir:/code:ro"))
-                            .withNetworkMode("host")
+                            .withNetworkMode("chainless")
                         )
                         .withCmd(DockerDriver.commandForLanguage(language)*)
                         .withWorkingDir("/code")
