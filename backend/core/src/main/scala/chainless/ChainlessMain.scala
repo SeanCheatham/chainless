@@ -82,10 +82,11 @@ object ChainlessMain extends ResourceApp.Forever {
         NonEmptyChain
           .fromChainUnsafe(Chain.fromSeq(List.tabulate(args.runnerCount)(i => i + args.runnerApiBindPortStart)))
           .traverse(port =>
-            Files[F].tempDirectory
+            Files[F]
+              .tempDirectory(Some(Path(args.sharedTmpDir)), port.toString, None)
               .flatMap(localCodeCache =>
                 DockerDriver.make[F](
-                  s"http://localhost:$port",
+                  s"http://chainless:$port",
                   objectStore,
                   localCodeCache
                 )
@@ -101,7 +102,7 @@ object ChainlessMain extends ResourceApp.Forever {
                 )
               )
               .flatTap(jobProcessor =>
-                new RunnerHttpServer(jobProcessor.nextTask, jobProcessor.completeTask).serve("localhost", port)
+                new RunnerHttpServer(jobProcessor.nextTask, jobProcessor.completeTask).serve("0.0.0.0", port)
               )
           )
           .flatMap(MultiJobProcessor.make[F])
@@ -120,5 +121,6 @@ case class RunnerManagerArgs(
     runnerApiBindPortStart: Int = 8093,
     runnerCount: Int = 1,
     healthcheckBindHost: String = "0.0.0.0",
-    healthcheckBindPort: Int = 9999
+    healthcheckBindPort: Int = 9999,
+    sharedTmpDir: String = "/tmp/chainless"
 )

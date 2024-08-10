@@ -62,7 +62,7 @@ lazy val core = project
     )
   )
   .settings(
-    bashScriptExtraDefines += "start-docker.sh",
+//    bashScriptExtraDefines += "start-docker.sh",
     dockerBaseImage := "cruizba/ubuntu-dind",
     dockerUpdateLatest := sys.env.get("DOCKER_PUBLISH_LATEST_TAG").fold(false)(_.toBoolean),
     dockerLabels ++= Map(
