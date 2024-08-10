@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.1.1">
 <title data-rh="true">Chainless Docs | Chainless</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://seancheatham.github.io/chainless/docs/intro"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Chainless Docs | Chainless"><meta data-rh="true" name="description" content="Getting Started"><meta data-rh="true" property="og:description" content="Getting Started"><link data-rh="true" rel="icon" href="/chainless/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://seancheatham.github.io/chainless/docs/intro"><link data-rh="true" rel="alternate" href="https://seancheatham.github.io/chainless/docs/intro" hreflang="en"><link data-rh="true" rel="alternate" href="https://seancheatham.github.io/chainless/docs/intro" hreflang="x-default"><link rel="stylesheet" href="/chainless/assets/css/styles.2693d822.css">
-<script src="/chainless/assets/js/runtime~main.9775327c.js" defer="defer"></script>
+<script src="/chainless/assets/js/runtime~main.da43c5b5.js" defer="defer"></script>
 <script src="/chainless/assets/js/main.b0fc0872.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -29,7 +29,12 @@
 <li>Creates a persistent location for saving block and function data</li>
 </ul>
 </li>
-<li><code>docker run -d --name chainless --restart=always -p 42069:42069 -v chainless_data:/app --privileged seancheatham/chainless:latest --ethereum-rpc-address $ETHEREUM_RPC_ADDRESS --bitcoin-rpc-address $BITCOIN_RPC_ADDRESS --apparatus-rpc-address $APPARATUS_RPC_ADDRESS</code>
+<li><code>docker network create chainless</code>
+<ul>
+<li>Creates a dedicated bridge network for function containers</li>
+</ul>
+</li>
+<li><code>docker run -d --name chainless --restart=always -p 42069:42069 -v chainless_data:/app -v /var/run/docker.sock:/var/run/docker.sock -v  /tmp/chainless:/tmp/chainless --network chainless seancheatham/chainless:latest --ethereum-rpc-address $ETHEREUM_RPC_ADDRESS --bitcoin-rpc-address $BITCOIN_RPC_ADDRESS --apparatus-rpc-address $APPARATUS_RPC_ADDRESS</code>
 <ul>
 <li>Substitute your own ethereum, bitcoin, and/or apparatus node addresses.<!-- -->
 <ul>
@@ -38,10 +43,10 @@
 <li>At least one chain must be configured.</li>
 </ul>
 </li>
-<li><code>--privileged</code> is needed to run persistent functions within Docker containers.<!-- -->
+<li>Docker-out-of-Docker is used as a runtime for function containers.<!-- -->
 <ul>
-<li>This flag introduces some <a href="https://docs.docker.com/reference/cli/docker/container/run/#privileged" target="_blank" rel="noopener noreferrer">security risks</a>. Use it if you prefer to use gasoline to start campfires.</li>
-<li>Alternatively, you may install <a href="https://github.com/nestybox/sysbox" target="_blank" rel="noopener noreferrer">sysbox</a> for better security. Use it if you drive the posted speed limit on roadways.</li>
+<li>The implementation expects the bridge network to be named <code>chainless</code>.</li>
+<li>The implementation expects the <code>-v  /tmp/chainless:/tmp/chainless</code> binding exactly as specified.</li>
 </ul>
 </li>
 <li>If you like to live on the edge, you can use the <code>seancheatham/chainless:dev</code> image tag to try the newest bugs and features.</li>
