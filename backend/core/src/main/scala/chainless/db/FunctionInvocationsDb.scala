@@ -22,8 +22,8 @@ trait FunctionInvocationsDb[F[_]]:
   ): Stream[F, FunctionInvocation]
 
   def temporary(
-      after: Instant = Instant.MIN,
-      before: Instant = Instant.MAX
+      after: Instant = Instant.ofEpochMilli(0),
+      before: Instant = Instant.ofEpochMilli(Long.MaxValue)
   ): Stream[F, FunctionInvocation]
 
 class SqlFunctionInvocationsDb[F[_]: Async](connection: Connection) extends FunctionInvocationsDb[F]:
@@ -56,8 +56,8 @@ class SqlFunctionInvocationsDb[F[_]: Async](connection: Connection) extends Func
       .flatMap(invocationResultStream)
 
   override def temporary(
-      after: Instant = Instant.MIN,
-      before: Instant = Instant.MAX
+      after: Instant = Instant.ofEpochMilli(0),
+      before: Instant = Instant.ofEpochMilli(Long.MaxValue)
   ): Stream[F, FunctionInvocation] =
     Stream
       .eval(Async[F].blocking {
