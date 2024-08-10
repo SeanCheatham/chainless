@@ -34,6 +34,8 @@ Smash some code into your keyboard, click submit, and watch as Chainless magical
 - Ethereum
 - Apparatus
 
+Support for other chains will be added over time. If you'd like to request one, feel free to file an [Issue](https://github.com/SeanCheatham/chainless/issues). Bonus points if you provide some reference material to assist with the integration. Bonus bonus points if you file a PR with an implementation!
+
 ## Supported Languages
 **Temporary Functions**
 - JavaScript (GraalVM)
@@ -41,6 +43,8 @@ Smash some code into your keyboard, click submit, and watch as Chainless magical
 **Persistent Functions**
 - JavaScript/TypeScript (NodeJS)
 - Java/Scala/Kotlin (JVM)
+
+Support for other languages will be added over time. If you'd like to request one, feel free to file an [Issue](https://github.com/SeanCheatham/chainless/issues). Bonus points if you provide some reference material to assist with the integration. Bonus bonus points if you file a PR with an implementation!
 
 ## FAQ
 - Is Chainless AI-native?
