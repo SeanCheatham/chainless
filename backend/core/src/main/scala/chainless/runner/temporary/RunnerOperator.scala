@@ -35,10 +35,11 @@ class RunnerOperator[F[_]: Async: NonEmptyParallel](
   given Logger[F] = Slf4jLogger.getLoggerFromName("Operator")
 
   def retroact(
-      code: String
+      code: String,
+      language: String
   )(timestampMs: Long, chains: NonEmptyChain[Chain]): Stream[F, FunctionState] =
     Stream
-      .resource(LocalGraalRunner.make[F](code))
+      .resource(LocalGraalRunner.make[F](code, language))
       .flatMap(runner =>
         blocksDb
           .blocksAfterTimestamp(chains)(timestampMs)
@@ -52,11 +53,11 @@ class RunnerOperator[F[_]: Async: NonEmptyParallel](
           .map(_._2)
       )
 
-  def live(code: String, stateWithChains: FunctionState)(
+  def live(code: String, language: String, stateWithChains: FunctionState)(
       chains: NonEmptyChain[Chain]
   ): Stream[F, FunctionState] =
     Stream
-      .resource(LocalGraalRunner.make[F](code))
+      .resource(LocalGraalRunner.make[F](code, language))
       .flatMap(runner =>
         newBlocks
           .filter(meta => chains.contains(meta.chain))

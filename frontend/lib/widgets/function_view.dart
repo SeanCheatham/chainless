@@ -317,6 +317,10 @@ Widget languageIcon(String language, {Color? color, double? size}) {
       return Tooltip(
           message: "JVM",
           child: FaIcon(FontAwesomeIcons.java, color: color, size: size));
+    case "python":
+      return Tooltip(
+          message: "Python",
+          child: FaIcon(FontAwesomeIcons.python, color: color, size: size));
     default:
       return Tooltip(
           message: "Unknown",

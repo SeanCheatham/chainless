@@ -12,10 +12,11 @@ import scala.concurrent.duration.*
 package object models:
   case class InitRequest(code: String, config: Json)
 
-  case class RetroactRequest(code: String, timestampMs: Long, chains: NonEmptyChain[Chain])
+  case class RetroactRequest(code: String, timestampMs: Long, chains: NonEmptyChain[Chain], language: String = "js")
 
   case class StreamRequest(
       code: String,
+      language: String = "js",
       chainStates: Option[Map[String, String]],
       state: Option[Json],
       chains: NonEmptyChain[Chain]

@@ -225,7 +225,7 @@ class ApiServer(
           .map(request =>
             Response(
               body = operator
-                .retroact(request.code)(request.timestampMs, request.chains)
+                .retroact(request.code, request.language)(request.timestampMs, request.chains)
                 .map(_.asJson)
                 .map(_.noSpaces)
                 .mergeHaltL(keepAliveTick(2.seconds))
@@ -245,6 +245,7 @@ class ApiServer(
               body = operator
                 .live(
                   request.code,
+                  request.language,
                   FunctionState(request.chainStates.getOrElse(Map.empty), request.state.getOrElse(Json.Null))
                 )(request.chains)
                 .map(_.asJson)

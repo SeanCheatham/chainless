@@ -45,7 +45,8 @@ object Dependencies {
 
   val graalVM = Seq(
     "org.graalvm.polyglot" % "polyglot" % "24.0.2",
-    "org.graalvm.polyglot" % "js-community" % "24.0.2"
+    "org.graalvm.polyglot" % "js-community" % "24.0.2",
+    "org.graalvm.polyglot" % "python-community" % "24.0.2"
   )
 
   val http4s = Seq(
