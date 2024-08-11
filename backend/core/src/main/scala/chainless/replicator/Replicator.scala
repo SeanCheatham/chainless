@@ -23,7 +23,7 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 class Replicator[F[_]: Async](
     blocks: BlocksDb[F],
     providers: Map[Chain, BlocksProvider[F]],
-    blockStore: ObjectStore[F],
+    blockStore: BlocksStore[F],
     broadcaster: BlockMeta => F[Unit]
 ):
 
@@ -62,13 +62,7 @@ class Replicator[F[_]: Async](
 
   private def pipe: Pipe[F, BlockWithChain, Unit] =
     _.evalTap(block => logger.info(show"Saving block $block"))
-      .evalTap(blockWithChain =>
-        blockStore.save(blockWithChain.meta.chain.name)(blockWithChain.meta.blockId)(
-          Stream(blockWithChain.block)
-            .map(_.noSpaces)
-            .through(fs2.text.utf8.encode)
-        )
-      )
+      .evalTap(blockStore.saveBlock)
       .map(_.meta)
       .evalTap(blocks.insert)
       .evalTap(broadcaster)
