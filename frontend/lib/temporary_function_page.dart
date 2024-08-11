@@ -29,12 +29,7 @@ class _TemporaryFunctionPageState extends State<TemporaryFunctionPage> {
   @override
   void initState() {
     super.initState();
-    model = EditorModel(
-      styleOptions: codeEditorStyle(500),
-      files: [
-        FileEditor(name: "Temporary Function", language: language, code: code)
-      ],
-    );
+    model = _buildModel;
   }
 
   @override
@@ -89,8 +84,16 @@ class _TemporaryFunctionPageState extends State<TemporaryFunctionPage> {
   static const divider =
       Divider(thickness: 0, height: 24, color: Colors.transparent);
 
+  EditorModel get _buildModel => EditorModel(
+        styleOptions: codeEditorStyle(500),
+        files: [
+          FileEditor(name: "Temporary Function", language: language, code: code)
+        ],
+      );
+
   Widget editor() {
     return CodeEditor(
+      key: UniqueKey(),
       model: model,
       formatters: const ["js", "python"],
       onSubmit: (_, c) {
@@ -123,8 +126,15 @@ class _TemporaryFunctionPageState extends State<TemporaryFunctionPage> {
             if (selectedOptions.isNotEmpty) {
               final value = selectedOptions.first.value;
               if (value != null) {
+                final newLanguage = selectedOptions.first.value ?? "js";
+                final previousLanguage = language;
+                final codeWasDefault = _codeIsDefault(previousLanguage, code);
                 setState(() {
-                  language = selectedOptions.first.value ?? "";
+                  language = newLanguage;
+                  if (codeWasDefault) {
+                    code = newLanguage == "js" ? _jsCode : _pythonCode;
+                    model = _buildModel;
+                  }
                 });
               }
             }
@@ -180,6 +190,16 @@ class _TemporaryFunctionPageState extends State<TemporaryFunctionPage> {
       icon: const Icon(Icons.send),
       label: const Text("Run"),
     );
+  }
+
+  bool _codeIsDefault(String language, String code) {
+    if (language == "js") {
+      return code == _jsCode;
+    } else if (language == "python") {
+      return code == _pythonCode;
+    } else {
+      return false;
+    }
   }
 }
 
