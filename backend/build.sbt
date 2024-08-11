@@ -15,8 +15,7 @@ inThisBuild(
       sbtdynver.DynVer.getGitDescribeOutput(d).mkVersion(versionFmt, fallbackVersion(d))
     },
     semanticdbEnabled := true,
-    semanticdbVersion := scalafixSemanticdb.revision,
-    coverageEnabled := true
+    semanticdbVersion := scalafixSemanticdb.revision
   )
 )
 
