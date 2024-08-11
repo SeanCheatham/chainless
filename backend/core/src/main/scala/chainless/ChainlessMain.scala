@@ -30,7 +30,7 @@ object ChainlessMain extends ResourceApp.Forever {
 
   override def run(args: List[String]): Resource[F, Unit] =
     for {
-      _ <- GraalSupport.verifyCompatibility[F]
+      _ <- GraalSupport.verifyCompatibility[F].toResource
       given Client[F] <- EmberClientBuilder.default[F].withTimeout(5.seconds).build
       given Files[F] = Files.forIO
       (args, _) <- IO

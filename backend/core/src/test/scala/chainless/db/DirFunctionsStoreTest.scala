@@ -4,7 +4,7 @@ import cats.effect.IO
 import fs2.io.file.Files
 import munit.CatsEffectSuite
 
-class DirFunctionsStoreSpec extends CatsEffectSuite {
+class DirFunctionsStoreTest extends CatsEffectSuite {
 
   test("Save, read, delete functions") {
     Files.forIO.tempDirectory.use(baseDir =>

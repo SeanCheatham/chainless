@@ -7,7 +7,7 @@ import munit.CatsEffectSuite
 import io.circe.*
 import io.circe.syntax.*
 
-class DirBlocksStoreSpec extends CatsEffectSuite {
+class DirBlocksStoreTest extends CatsEffectSuite {
 
   test("Save, read blocks") {
     val b1 = BlockWithChain(BlockMeta(Chain.Bitcoin, "b1", "b0", 1, 50), Json.obj("a" -> true.asJson))

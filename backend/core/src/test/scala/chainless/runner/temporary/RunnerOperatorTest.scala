@@ -11,7 +11,7 @@ import fs2.*
 
 import java.time.Instant
 
-class RunnerOperatorSpec extends CatsEffectSuite {
+class RunnerOperatorTest extends CatsEffectSuite {
   private val b1 = BlockWithChain(BlockMeta(Chain.Bitcoin, "b1", "b0", 1, 50), Json.obj("a" -> true.asJson))
   private val b2 = BlockWithChain(BlockMeta(Chain.Bitcoin, "b2", "b1", 2, 51), Json.obj("a" -> true.asJson))
   private val e1 = BlockWithChain(BlockMeta(Chain.Ethereum, "e1", "e0", 1, 70), Json.obj("b" -> true.asJson))
