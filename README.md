@@ -39,6 +39,7 @@ Support for other chains will be added over time. If you'd like to request one, 
 ## Supported Languages
 **Temporary Functions**
 - JavaScript (GraalVM)
+- Python (GraalVM)
 
 **Persistent Functions**
 - JavaScript/TypeScript (NodeJS)
