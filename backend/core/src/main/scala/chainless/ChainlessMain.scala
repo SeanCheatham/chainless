@@ -45,10 +45,8 @@ object ChainlessMain extends ResourceApp.Forever {
       functionsDb <- SqlFunctionsDb.make[F](sqliteConnection)
       functionInvocationsDb <- SqlFunctionInvocationsDb.make[F](sqliteConnection)
       blocksDb <- SqlBlocksDb.make[F](sqliteConnection)
-      blocksStore <- ObjectStore.make[F](Path(args.dataDir) / "objects" / "blocks", "blocks").map(new BlocksStore[F](_))
-      functionsStore <- ObjectStore
-        .make[F](Path(args.dataDir) / "objects" / "functions", "functions")
-        .map(new FunctionsStore[F](_))
+      blocksStore = new BlocksStore[F](Path(args.dataDir) / "objects" / "blocks")
+      functionsStore = new FunctionsStore[F](Path(args.dataDir) / "objects" / "functions")
       runnerOperator = new RunnerOperator[F](
         blocksDb,
         blocksStore,
