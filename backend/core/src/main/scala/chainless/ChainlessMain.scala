@@ -75,39 +75,40 @@ object ChainlessMain extends ResourceApp.Forever {
       functionInvocationsDb: FunctionInvocationsDb[F],
       blocksDb: BlocksDb[F]
   ) =
-    Ref
-      .of[F, Boolean](false)
-      .toResource
-      .flatMap(canceledRef =>
-        NonEmptyChain
-          .fromChainUnsafe(Chain.fromSeq(List.tabulate(args.runnerCount)(i => i + args.runnerApiBindPortStart)))
-          .traverse(port =>
-            Files[F]
-              .tempDirectory(Some(Path(args.sharedTmpDir)), port.toString, None)
-              .flatMap(localCodeCache =>
-                DockerDriver.make[F](
-                  s"http://chainless:$port",
-                  objectStore,
-                  localCodeCache
+    Files[F].createDirectories(Path(args.sharedTmpDir)).toResource >>
+      Ref
+        .of[F, Boolean](false)
+        .toResource
+        .flatMap(canceledRef =>
+          NonEmptyChain
+            .fromChainUnsafe(Chain.fromSeq(List.tabulate(args.runnerCount)(i => i + args.runnerApiBindPortStart)))
+            .traverse(port =>
+              Files[F]
+                .tempDirectory(Some(Path(args.sharedTmpDir)), port.toString, None)
+                .flatMap(localCodeCache =>
+                  DockerDriver.make[F](
+                    s"http://chainless:$port",
+                    objectStore,
+                    localCodeCache
+                  )
                 )
-              )
-              .flatMap(dockerDriver =>
-                JobProcessor.make[F](
-                  dockerDriver,
-                  functionsDb,
-                  functionInvocationsDb,
-                  blocksDb,
-                  objectStore,
-                  canceledRef
+                .flatMap(dockerDriver =>
+                  JobProcessor.make[F](
+                    dockerDriver,
+                    functionsDb,
+                    functionInvocationsDb,
+                    blocksDb,
+                    objectStore,
+                    canceledRef
+                  )
                 )
-              )
-              .flatTap(jobProcessor =>
-                new RunnerHttpServer(jobProcessor.nextTask, jobProcessor.completeTask).serve("0.0.0.0", port)
-              )
-          )
-          .flatMap(MultiJobProcessor.make[F])
-          .flatTap(_ => Resource.onFinalize(canceledRef.set(true)))
-      )
+                .flatTap(jobProcessor =>
+                  new RunnerHttpServer(jobProcessor.nextTask, jobProcessor.completeTask).serve("0.0.0.0", port)
+                )
+            )
+            .flatMap(MultiJobProcessor.make[F])
+            .flatTap(_ => Resource.onFinalize(canceledRef.set(true)))
+        )
 }
 
 @AppName("Chainless")

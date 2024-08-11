@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:chainless_frontend/models/models.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:rxdart/rxdart.dart';
 import './http_client.dart';
@@ -8,7 +9,8 @@ import './http_client.dart';
 class PublicApiClient {
   final String baseAddress;
 
-  static const defaultBaseAddress = "/api";
+  static const defaultBaseAddress =
+      kDebugMode ? "http://localhost:42069/api" : "/api";
 
   PublicApiClient({this.baseAddress = defaultBaseAddress});
 
@@ -139,11 +141,12 @@ class PublicApiClient {
   }
 
   Stream<FunctionState> retroact(
-      String code, DateTime timestamp, List<String> chains) {
+      String code, String language, DateTime timestamp, List<String> chains) {
     final client = makeHttpClient();
     Future<Stream<List<int>>> call() async {
       final body = {
         "code": code,
+        "language": language,
         "timestampMs": timestamp.millisecondsSinceEpoch,
         "chains": chains,
       };
@@ -175,12 +178,13 @@ class PublicApiClient {
         .doOnError((_, __) => client.close());
   }
 
-  Stream<FunctionState> streamed(
-      String code, FunctionState stateWithChains, List<String> chains) {
+  Stream<FunctionState> streamed(String code, String language,
+      FunctionState stateWithChains, List<String> chains) {
     final client = makeHttpClient();
     Future<Stream<List<int>>> call() async {
       final body = {
         "code": code,
+        "language": language,
         "chainStates": stateWithChains.chainStates,
         "state": stateWithChains.state,
         "chains": chains,

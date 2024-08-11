@@ -7,6 +7,7 @@ import 'package:chainless_frontend/ui_utils.dart';
 import 'package:chainless_frontend/widgets/chain_selection_dropdown.dart';
 import 'package:chainless_frontend/widgets/gradient_background.dart';
 import 'package:flutter/material.dart';
+import 'package:multi_dropdown/multiselect_dropdown.dart';
 import 'package:omni_datetime_picker/omni_datetime_picker.dart';
 import 'package:code_editor/code_editor.dart';
 import 'package:provider/provider.dart';
@@ -19,7 +20,8 @@ class TemporaryFunctionPage extends StatefulWidget {
 }
 
 class _TemporaryFunctionPageState extends State<TemporaryFunctionPage> {
-  String code = _code;
+  String code = _jsCode;
+  String language = "js";
   DateTime? initTime;
   late EditorModel model;
   List<String> chains = ["bitcoin", "ethereum", "apparatus"];
@@ -27,12 +29,7 @@ class _TemporaryFunctionPageState extends State<TemporaryFunctionPage> {
   @override
   void initState() {
     super.initState();
-    model = EditorModel(
-      styleOptions: codeEditorStyle(500),
-      files: [
-        FileEditor(name: "Temporary Function", language: "js", code: code)
-      ],
-    );
+    model = _buildModel;
   }
 
   @override
@@ -69,6 +66,8 @@ class _TemporaryFunctionPageState extends State<TemporaryFunctionPage> {
                           fontWeight: FontWeight.bold,
                         )).pad16,
                     divider,
+                    languageField(),
+                    divider,
                     chainsField(),
                     divider,
                     timePickerField(),
@@ -85,10 +84,18 @@ class _TemporaryFunctionPageState extends State<TemporaryFunctionPage> {
   static const divider =
       Divider(thickness: 0, height: 24, color: Colors.transparent);
 
+  EditorModel get _buildModel => EditorModel(
+        styleOptions: codeEditorStyle(500),
+        files: [
+          FileEditor(name: "Temporary Function", language: language, code: code)
+        ],
+      );
+
   Widget editor() {
     return CodeEditor(
+      key: UniqueKey(),
       model: model,
-      formatters: const ["js"],
+      formatters: const ["js", "python"],
       onSubmit: (_, c) {
         setState(() {
           code = c;
@@ -109,6 +116,37 @@ class _TemporaryFunctionPageState extends State<TemporaryFunctionPage> {
       ),
     );
   }
+
+  Widget languageField() => FieldWithHeader(
+        name: "Language",
+        required: true,
+        tooltip: "The programming language used to develop your function.",
+        child: MultiSelectDropDown<String>(
+          onOptionSelected: (selectedOptions) {
+            if (selectedOptions.isNotEmpty) {
+              final value = selectedOptions.first.value;
+              if (value != null) {
+                final newLanguage = selectedOptions.first.value ?? "js";
+                final previousLanguage = language;
+                final codeWasDefault = _codeIsDefault(previousLanguage, code);
+                setState(() {
+                  language = newLanguage;
+                  if (codeWasDefault) {
+                    code = newLanguage == "js" ? _jsCode : _pythonCode;
+                    model = _buildModel;
+                  }
+                });
+              }
+            }
+          },
+          options: [
+            for (final c in selectableLanguages) ValueItem(label: c, value: c)
+          ],
+          selectionType: SelectionType.single,
+          selectedOptionIcon: const Icon(Icons.check_circle),
+          selectedOptions: [ValueItem(label: language, value: language)],
+        ),
+      );
 
   Widget timePickerField() {
     final icon = TextButton.icon(
@@ -143,6 +181,7 @@ class _TemporaryFunctionPageState extends State<TemporaryFunctionPage> {
         MaterialPageRoute(
           builder: (context) => StateViewer(
             code: code,
+            language: language,
             initTime: initTime,
             chains: chains,
           ),
@@ -152,16 +191,28 @@ class _TemporaryFunctionPageState extends State<TemporaryFunctionPage> {
       label: const Text("Run"),
     );
   }
+
+  bool _codeIsDefault(String language, String code) {
+    if (language == "js") {
+      return code == _jsCode;
+    } else if (language == "python") {
+      return code == _pythonCode;
+    } else {
+      return false;
+    }
+  }
 }
 
 class StateViewer extends StatelessWidget {
   final String code;
+  final String language;
   final DateTime? initTime;
   final List<String> chains;
 
   const StateViewer(
       {super.key,
       required this.code,
+      required this.language,
       required this.initTime,
       required this.chains});
 
@@ -186,14 +237,16 @@ class StateViewer extends StatelessWidget {
   Stream<FunctionState> stream(PublicApiClient client) async* {
     late FunctionState retroacted;
     if (initTime != null) {
-      await for (final next in client.retroact(code, initTime!, chains)) {
+      await for (final next
+          in client.retroact(code, language, initTime!, chains)) {
         yield next;
         retroacted = next;
       }
     } else {
       retroacted = FunctionState(chainStates: {}, state: null);
     }
-    await for (final next in client.streamed(code, retroacted, chains)) {
+    await for (final next
+        in client.streamed(code, language, retroacted, chains)) {
       yield next;
     }
   }
@@ -204,7 +257,7 @@ class StateViewer extends StatelessWidget {
           chainStates: functionState.chainStates,
           state: functionState.state,
           name: "Temporary Function",
-          language: "js",
+          language: language,
           chains: chains,
           error: null,
           initialized: true,
@@ -217,7 +270,7 @@ class StateViewer extends StatelessWidget {
   );
 }
 
-const _code = """
+const _jsCode = """
 // A function which counts blocks, grouped by chain
 // A temporary function accepts two arguments: the current state and a new block
 (function(functionState, blockWithMeta) {
@@ -238,3 +291,18 @@ const _code = """
   return state;
 });
 """;
+
+const _pythonCode = """
+import polyglot
+@polyglot.export_value
+def apply_block(stateWithChains, blockWithMeta):
+  state = stateWithChains["state"] or {}
+  chain = blockWithMeta["meta"]["chain"]
+  if chain in state:
+    state[chain] = state[chain] + 1
+  else:
+    state[chain] = 1
+  return state
+""";
+
+const selectableLanguages = ["js", "python"];

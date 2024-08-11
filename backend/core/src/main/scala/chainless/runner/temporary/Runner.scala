@@ -7,25 +7,25 @@ import cats.NonEmptyParallel
 import chainless.models.{*, given}
 import io.circe.syntax.*
 import io.circe.{Json, JsonNumber, JsonObject}
-import org.graalvm.polyglot.proxy.{ProxyArray, ProxyObject}
+import org.graalvm.polyglot.proxy.*
 import org.graalvm.polyglot.{Context, Value}
 
 import java.util.concurrent.Executors
+import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters.*
 
 /** A running instance of a temporary function. Applies each block to the current function.
-  * @tparam F
   */
 trait Runner[F[_]]:
   def applyBlock(stateWithChains: FunctionState, blockWithChain: BlockWithChain): F[FunctionState]
 
 object LocalGraalRunner:
   import GraalSupport.*
-  def make[F[_]: Async: NonEmptyParallel](code: String): Resource[F, Runner[F]] =
+  def make[F[_]: Async: NonEmptyParallel](code: String, language: String): Resource[F, Runner[F]] =
     GraalSupport
       .makeContext[F]
-      .evalMap((ec, context) => ec.evalSync(context.eval("js", code)).map((ec, context, _)))
+      .evalMap((ec, context) => ec.evalSync(context.eval(language, code)).map((ec, context, _)))
       .map((ec, context, compiled) =>
         new Runner[F]:
           given Context = context
@@ -39,9 +39,17 @@ object LocalGraalRunner:
                 .guarantee(Async[F].cede)
                 .flatMap((stateWithChainsJson, blockWithChainJson) =>
                   ec.evalSync {
-                    val result = compiled.execute(stateWithChainsJson.asValue, blockWithChainJson.asValue)
-                    val json = result.asJson
-                    json
+                    if (language == "js") {
+                      val result = compiled.execute(stateWithChainsJson.asValue, blockWithChainJson.asValue)
+                      val json = result.asJson
+                      json
+                    } else {
+                      val result = context.getPolyglotBindings
+                        .getMember("apply_block")
+                        .execute(stateWithChainsJson.asValue, blockWithChainJson.asValue)
+                      val json = result.asJson
+                      json
+                    }
                   }
                 )
                 .guarantee(Async[F].cede)
@@ -70,8 +78,8 @@ object GraalSupport:
       )
       .flatMap(executor =>
         Resource
-          .make(executor.eval(Sync[F].delay(Context.create())))(context =>
-            executor.eval(Sync[F].blocking(context.close()))
+          .make(executor.eval(Sync[F].delay(Context.newBuilder("js", "python").allowAllAccess(true).build())))(
+            context => executor.eval(Sync[F].blocking(context.close()))
           )
           .tupleLeft(executor)
       )
@@ -119,11 +127,11 @@ object GraalSupport:
       }
 
       def onObject(value: JsonObject): Value = {
-        val map = new java.util.HashMap[String, AnyRef](value.size)
+        val map = new java.util.HashMap[Object, Object](value.size)
         value.toMap.foreach { case (key, value) =>
           map.put(key, value.asValue)
         }
-        context.asValue(ProxyObject.fromMap(map))
+        context.asValue(ProxyHashMap.from(map))
       }
     }
 
@@ -144,19 +152,19 @@ object GraalSupport:
             k.asString() -> v.asJson
           }.toSeq*
         )
-      else if (value.hasMembers)
+      else if (value.hasMembers) {
         Json.obj(
-          value.asScalaMapIterator.map { case (k, v) =>
-            k.asString() -> v.asJson
-          }.toSeq*
+          value.getMemberKeys.asScala.map(key => key -> value.getMember(key).asJson).toSeq*
         )
-      else throw new MatchError(value)
+      } else throw new MatchError(value)
 
+    @tailrec
     def asScalaIterator(using context: Context): Iterator[Value] =
       if (value.isIterator) {
         Iterator.unfold(value)(i => Option.when(i.hasIteratorNextElement)(i.getIteratorNextElement -> i))
       } else value.getIterator.asScalaIterator
 
+    @tailrec
     def asScalaMapIterator(using context: Context): Iterator[(Value, Value)] =
       if (value.isIterator) {
         Iterator.unfold(value)(i =>
@@ -166,8 +174,6 @@ object GraalSupport:
             (arr.getArrayElement(0) -> arr.getArrayElement(1)) -> i
           }
         )
-      } else if (value.hasMembers)
-        value.getMemberKeys.asScala.iterator.map(key => context.asValue(key) -> value.getMember(key))
-      else value.getHashEntriesIterator.asScalaMapIterator
+      } else value.getHashEntriesIterator.asScalaMapIterator
 
   extension (json: Json) def asValue(using context: Context): Value = json.foldWith(jsonFolder)
