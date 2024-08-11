@@ -1,4 +1,6 @@
 ![Chainless](./docs/static/img/logo.png)
+[![Push](https://github.com/SeanCheatham/chainless/actions/workflows/push.yml/badge.svg)](https://github.com/SeanCheatham/chainless/actions/workflows/push.yml)
+
 "Serverless Functions" for blockchain events. But you need a server. And a blockchain. So it's neither serverless nor chainless. Modern branding is wonderful.
 
 Smash some code into your keyboard, click submit, and watch as Chainless magically runs your beautifully crafted function against blockchain blocks. Functions can either be Temporary or Persistent. Temporary functions exist only for the lifetime of the connection to the HTTP endpoint. Persistent functions run in the background even when you close your browser.
