@@ -21,6 +21,11 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Setup Java
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '22'
+          distribution: 'graalvm-community'
       - name: Checkout current branch
         uses: actions/checkout@v4
         with:
