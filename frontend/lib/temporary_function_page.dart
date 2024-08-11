@@ -20,7 +20,7 @@ class TemporaryFunctionPage extends StatefulWidget {
 }
 
 class _TemporaryFunctionPageState extends State<TemporaryFunctionPage> {
-  String code = _code;
+  String code = _jsCode;
   String language = "js";
   DateTime? initTime;
   late EditorModel model;
@@ -250,7 +250,7 @@ class StateViewer extends StatelessWidget {
   );
 }
 
-const _code = """
+const _jsCode = """
 // A function which counts blocks, grouped by chain
 // A temporary function accepts two arguments: the current state and a new block
 (function(functionState, blockWithMeta) {
@@ -270,6 +270,19 @@ const _code = """
   // Return the updated state so that it can be passed to the next invocation
   return state;
 });
+""";
+
+const _pythonCode = """
+import polyglot
+@polyglot.export_value
+def apply_block(stateWithChains, blockWithMeta):
+  state = stateWithChains["state"] or {}
+  chain = blockWithMeta["meta"]["chain"]
+  if chain in state:
+    state[chain] = state[chain] + 1
+  else:
+    state[chain] = 1
+  return state
 """;
 
 const selectableLanguages = ["js", "python"];

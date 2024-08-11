@@ -7,7 +7,7 @@ import cats.NonEmptyParallel
 import chainless.models.{*, given}
 import io.circe.syntax.*
 import io.circe.{Json, JsonNumber, JsonObject}
-import org.graalvm.polyglot.proxy.{ProxyArray, ProxyObject}
+import org.graalvm.polyglot.proxy.*
 import org.graalvm.polyglot.{Context, Value}
 
 import java.util.concurrent.Executors
@@ -127,11 +127,11 @@ object GraalSupport:
       }
 
       def onObject(value: JsonObject): Value = {
-        val map = new java.util.HashMap[String, AnyRef](value.size)
+        val map = new java.util.HashMap[Object, Object](value.size)
         value.toMap.foreach { case (key, value) =>
           map.put(key, value.asValue)
         }
-        context.asValue(ProxyObject.fromMap(map))
+        context.asValue(ProxyHashMap.from(map))
       }
     }
 
@@ -152,13 +152,11 @@ object GraalSupport:
             k.asString() -> v.asJson
           }.toSeq*
         )
-      else if (value.hasMembers)
+      else if (value.hasMembers) {
         Json.obj(
-          value.asScalaMapIterator.map { case (k, v) =>
-            k.asString() -> v.asJson
-          }.toSeq*
+          value.getMemberKeys.asScala.map(key => key -> value.getMember(key).asJson).toSeq*
         )
-      else throw new MatchError(value)
+      } else throw new MatchError(value)
 
     @tailrec
     def asScalaIterator(using context: Context): Iterator[Value] =
@@ -176,8 +174,6 @@ object GraalSupport:
             (arr.getArrayElement(0) -> arr.getArrayElement(1)) -> i
           }
         )
-      } else if (value.hasMembers)
-        value.getMemberKeys.asScala.iterator.map(key => context.asValue(key) -> value.getMember(key))
-      else value.getHashEntriesIterator.asScalaMapIterator
+      } else value.getHashEntriesIterator.asScalaMapIterator
 
   extension (json: Json) def asValue(using context: Context): Value = json.foldWith(jsonFolder)
