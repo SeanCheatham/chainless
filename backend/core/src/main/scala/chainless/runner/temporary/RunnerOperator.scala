@@ -48,6 +48,7 @@ class RunnerOperator[F[_]: Async: NonEmptyParallel](
               Async[F]
                 .timed(runner.applyBlock(stateWithChains, blockWithMeta))
           }
+          .drop(1)
           .broadcastThrough(recorded)
           .map(_._2)
       )
@@ -64,6 +65,7 @@ class RunnerOperator[F[_]: Async: NonEmptyParallel](
           .evalScan((Duration.Zero, stateWithChains)) { case ((_, stateWithChains), blockWithMeta) =>
             Async[F].timed(runner.applyBlock(stateWithChains, blockWithMeta))
           }
+          .drop(1)
           .broadcastThrough(recorded)
           .map(_._2)
       )

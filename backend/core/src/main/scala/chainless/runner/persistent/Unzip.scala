@@ -15,7 +15,7 @@ object Unzip {
   def apply[F[_]: Async](chunkSize: Int = chunkSize): Pipe[F, Byte, (String, Boolean, Stream[F, Byte])] = {
 
     def entry(zis: ZipInputStream): OptionT[F, (String, Boolean, Stream[F, Byte])] =
-      OptionT(Sync[F].blocking(Option(zis.getNextEntry()))).map { ze =>
+      OptionT(Sync[F].blocking(Option(zis.getNextEntry))).map { ze =>
         (ze.getName, ze.isDirectory, io.readInputStream[F](Async[F].delay(zis), chunkSize, closeAfterUse = false))
       }
 

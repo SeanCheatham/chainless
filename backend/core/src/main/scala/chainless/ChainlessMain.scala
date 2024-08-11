@@ -30,7 +30,7 @@ object ChainlessMain extends ResourceApp.Forever {
 
   override def run(args: List[String]): Resource[F, Unit] =
     for {
-      _ <- GraalSupport.verifyCompatibility[F]
+      _ <- GraalSupport.verifyCompatibility[F].toResource
       given Client[F] <- EmberClientBuilder.default[F].withTimeout(5.seconds).build
       given Files[F] = Files.forIO
       (args, _) <- IO
@@ -45,8 +45,8 @@ object ChainlessMain extends ResourceApp.Forever {
       functionsDb <- SqlFunctionsDb.make[F](sqliteConnection)
       functionInvocationsDb <- SqlFunctionInvocationsDb.make[F](sqliteConnection)
       blocksDb <- SqlBlocksDb.make[F](sqliteConnection)
-      blocksStore = new BlocksStore[F](Path(args.dataDir) / "objects" / "blocks")
-      functionsStore = new FunctionsStore[F](Path(args.dataDir) / "objects" / "functions")
+      blocksStore = new DirBlocksStore[F](Path(args.dataDir) / "objects" / "blocks")
+      functionsStore = new DirFunctionsStore[F](Path(args.dataDir) / "objects" / "functions")
       runnerOperator = new RunnerOperator[F](
         blocksDb,
         blocksStore,
