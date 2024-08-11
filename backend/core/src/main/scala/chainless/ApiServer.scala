@@ -52,7 +52,7 @@ import scala.concurrent.duration.*
   */
 class ApiServer(
     functions: FunctionsDb[IO],
-    functionStoreClient: ObjectStore[IO],
+    functionStoreClient: FunctionsStore[IO],
     invocationsDB: FunctionInvocationsDb[IO],
     operator: RunnerOperator[IO],
     jobDispatcher: JobDispatcher[IO]
@@ -139,7 +139,7 @@ class ApiServer(
       case request @ DELETE -> Root / "functions" / id =>
         functions
           .delete(id)
-          .flatTap(deleted => IO.whenA(deleted)(functionStoreClient.delete("functions")(id).void))
+          .flatTap(deleted => IO.whenA(deleted)(functionStoreClient.delete(id).void))
           .ifM(
             Response().pure[F],
             Response().withStatus(Status.NotFound).pure[F]
@@ -172,7 +172,7 @@ class ApiServer(
           Files.forIO.tempFile
             .use(file =>
               stream.through(Files.forIO.writeAll(file)).compile.drain >>
-                functionStoreClient.save("functions")(id + revision.some.filter(_ > 0).fold("")(r => s"-$r"))(
+                functionStoreClient.save(id, revision)(
                   Files.forIO.readAll(file)
                 )
             ) >> functions.updateRevision(id, revision).as(Response())

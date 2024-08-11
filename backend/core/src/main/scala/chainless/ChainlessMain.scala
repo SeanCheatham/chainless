@@ -45,21 +45,22 @@ object ChainlessMain extends ResourceApp.Forever {
       functionsDb <- SqlFunctionsDb.make[F](sqliteConnection)
       functionInvocationsDb <- SqlFunctionInvocationsDb.make[F](sqliteConnection)
       blocksDb <- SqlBlocksDb.make[F](sqliteConnection)
-      objectStore = new ObjectStore[F](Path(args.dataDir) / "objects")
+      blocksStore = new BlocksStore[F](Path(args.dataDir) / "objects" / "blocks")
+      functionsStore = new FunctionsStore[F](Path(args.dataDir) / "objects" / "functions")
       runnerOperator = new RunnerOperator[F](
         blocksDb,
-        objectStore,
+        blocksStore,
         functionInvocationsDb,
         newBlocksTopic.subscribeUnbounded
       )
-      jobProcessor <- makeJobProcessor(args, objectStore, functionsDb, functionInvocationsDb, blocksDb)
+      jobProcessor <- makeJobProcessor(args, functionsStore, blocksStore, functionsDb, functionInvocationsDb, blocksDb)
       providers <- Providers
         .make[F](args.bitcoinRpcAddress, args.ethereumRpcAddress, args.apparatusRpcAddress)
         .map(_.toList.map(provider => provider.chain -> provider).toMap)
-      replicator = new Replicator[F](blocksDb, providers, objectStore, newBlocksTopic.publish1(_).void)
+      replicator = new Replicator[F](blocksDb, providers, blocksStore, newBlocksTopic.publish1(_).void)
       dispatcher = new JobDispatcher[F](newBlocksTopic.subscribeUnbounded, functionsDb, jobProcessor)
       _ <- healthcheck.setReadiness(Healthcheck.Healthy()).toResource
-      apiServer = new ApiServer(functionsDb, objectStore, functionInvocationsDb, runnerOperator, dispatcher)
+      apiServer = new ApiServer(functionsDb, functionsStore, functionInvocationsDb, runnerOperator, dispatcher)
       _ <- (
         Logger[F].info("Running").toResource,
         replicator.replicate.toResource,
@@ -70,7 +71,8 @@ object ChainlessMain extends ResourceApp.Forever {
 
   private def makeJobProcessor(
       args: RunnerManagerArgs,
-      objectStore: ObjectStore[F],
+      functionsStore: FunctionsStore[F],
+      blocksStore: BlocksStore[F],
       functionsDb: FunctionsDb[F],
       functionInvocationsDb: FunctionInvocationsDb[F],
       blocksDb: BlocksDb[F]
@@ -88,7 +90,7 @@ object ChainlessMain extends ResourceApp.Forever {
                 .flatMap(localCodeCache =>
                   DockerDriver.make[F](
                     s"http://chainless:$port",
-                    objectStore,
+                    functionsStore,
                     localCodeCache
                   )
                 )
@@ -98,7 +100,7 @@ object ChainlessMain extends ResourceApp.Forever {
                     functionsDb,
                     functionInvocationsDb,
                     blocksDb,
-                    objectStore,
+                    blocksStore,
                     canceledRef
                   )
                 )

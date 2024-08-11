@@ -8,12 +8,10 @@ import cats.implicits.*
 import cats.{MonadThrow, NonEmptyParallel}
 import chainless.db.*
 import chainless.models.*
-import fs2.Chunk
 import io.circe.Json
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
-import java.nio.charset.StandardCharsets
 import scala.concurrent.duration.*
 
 /** Handles a "job" which is a request to run a function. The job is processed by a sub-container which handles each
@@ -27,7 +25,7 @@ case class JobProcessorImpl[F[_]: Async: NonEmptyParallel](
     functionsDb: FunctionsDb[F],
     functionInvocationsDb: FunctionInvocationsDb[F],
     blockApiClient: BlocksDb[F],
-    blockStoreClient: ObjectStore[F],
+    blockStoreClient: BlocksStore[F],
     jobMutex: Mutex[F],
     stateRef: Ref[F, Option[TaskProcessor[F]]],
     wasCanceledRef: Ref[F, Boolean]
@@ -68,12 +66,11 @@ case class JobProcessorImpl[F[_]: Async: NonEmptyParallel](
         functionRevision <- OptionT
           .fromOption(functionInfo.revision)
           .getOrRaise(new IllegalArgumentException("Function code not uploaded"))
-        functionRevisionId = job.functionId + functionRevision.some.filter(_ > 0).fold("")(r => s"-$r")
         _ <- Logger[F].info(
-          s"Launching container for functionId=${job.functionId} functionRevisionId=$functionRevisionId invocationId=${job.jobId}"
+          s"Launching container for functionId=${job.functionId} functionRevision=$functionRevision invocationId=${job.jobId}"
         )
         _ <- dockerDriver
-          .createContainer(functionInfo.language, functionRevisionId)
+          .createContainer(functionInfo.language, job.functionId, functionRevision)
           .use(containerId =>
             processWithInactiveContainer(containerId)(job, functionInfo, liteTasks, job.jobId, completionDeferred)
           )
@@ -192,17 +189,6 @@ case class JobProcessorImpl[F[_]: Async: NonEmptyParallel](
         }
     }
 
-  def fetchBlock(meta: BlockMeta): F[BlockWithChain] =
-    blockStoreClient
-      .get(meta.chain.name)(meta.blockId)
-      .compile
-      .to(Chunk)
-      .map(chunk => new String(chunk.toArray[Byte], StandardCharsets.UTF_8))
-      .map(io.circe.parser.parse)
-      .rethrow
-      .map(BlockWithChain(meta, _))
-      .timeout(5.seconds)
-
 }
 
 object JobProcessor:
@@ -212,7 +198,7 @@ object JobProcessor:
       functionsDb: FunctionsDb[F],
       functionInvocationsDb: FunctionInvocationsDb[F],
       blockApiClient: BlocksDb[F],
-      blockStoreClient: ObjectStore[F],
+      blocksStore: BlocksStore[F],
       canceledRef: Ref[F, Boolean]
   ): Resource[F, JobProcessorImpl[F]] =
     (Mutex[F].toResource, Ref.of(none[TaskProcessor[F]]).toResource)
@@ -222,7 +208,7 @@ object JobProcessor:
           functionsDb,
           functionInvocationsDb,
           blockApiClient,
-          blockStoreClient,
+          blocksStore,
           _,
           _,
           canceledRef
@@ -320,8 +306,8 @@ case class TasksPending[F[_]: Async: Logger](
                       case InitLiteTask(config) =>
                         InitTask(config).pure[F]
                       case ApplyLiteTask(block) =>
-                        jobProcessor
-                          .fetchBlock(block)
+                        jobProcessor.blockStoreClient
+                          .getBlock(block)
                           .onError(e => onFinished(computeDuration, currentState.asRight, e.some))
                           .map(ApplyBlockTask(currentState, _))
                     })

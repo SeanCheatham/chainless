@@ -5,12 +5,12 @@ import cats.effect.implicits.*
 import cats.effect.std.Dispatcher
 import cats.effect.{Async, Resource}
 import cats.implicits.*
-import chainless.db.ObjectStore
+import chainless.db.FunctionsStore
 import chainless.models.Language
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.async.ResultCallback
 import com.github.dockerjava.api.command.{AsyncDockerCmd, SyncDockerCmd}
-import com.github.dockerjava.api.model.{Bind, HostConfig, PruneType}
+import com.github.dockerjava.api.model.{Bind, HostConfig}
 import com.github.dockerjava.core.{DefaultDockerClientConfig, DockerClientImpl}
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient
 import fs2.io.file.{Files, Path}
@@ -26,7 +26,7 @@ import scala.concurrent.duration.*
   *   the HTTP URL base path which is provided to user functions via the `CALLBACK_BASE_URL` environment variable
   * @param dockerClient
   *   client to interact with docker
-  * @param objectStore
+  * @param functionsStore
   *   object store containing the function code
   * @param tmpDir
   *   a directory in which a function can be extracted and mounted into a container
@@ -34,67 +34,71 @@ import scala.concurrent.duration.*
 class DockerDriver[F[_]: Async: Files](
     callbackBasePath: String,
     dockerClient: DockerClient,
-    objectStore: ObjectStore[F],
+    functionsStore: FunctionsStore[F],
     tmpDir: Path
 ) {
   given Logger[F] = Slf4jLogger.getLoggerFromName("DockerDriver")
 
   def createContainer(
       language: Language,
-      functionRevisionId: String
+      functionId: String,
+      functionRevision: Int
   ): Resource[F, String] =
-    prune.toResource >>
-      currentCachedCodeFunctionId
-        .filter(_ == functionRevisionId)
-        .void
-        .semiflatTap(_ => Logger[F].info(s"Code cache hit for functionRevisionId=$functionRevisionId"))
-        .getOrElseF(clearLocalCodeCache >> fetchAndSave(language, functionRevisionId))
-        .as(tmpDir / functionRevisionId)
-        .toResource
-        .flatMap(codeDir =>
-          Async[F]
-            .delay(DockerImage.forLanguage(language))
-            .map(i =>
-              i.split(':') match {
-                case Array(repository, tag) => (repository, tag)
-                case Array(repository)      => (repository, "latest")
-                case _                      => throw MatchError(i)
-              }
-            )
-            .toResource
-            .flatMap((imageRepository, imageTag) =>
-              Logger[F].info(s"Pulling $imageRepository:$imageTag").toResource >>
-                useDockerAsync(dockerClient.pullImageCmd(imageRepository).withTag(imageTag))
-                  .timeout(2.minutes)
-                  .toResource >>
-                Logger[F].info("Creating container").toResource >>
-                Resource
-                  .make(
-                    useDocker(
-                      dockerClient
-                        .createContainerCmd(s"$imageRepository:$imageTag")
-                        .withEnv(s"CALLBACK_BASE_URL=$callbackBasePath" +: DockerDriver.envForLanguage(language)*)
-                        .withHostConfig(
-                          HostConfig
-                            .newHostConfig()
-                            .withBinds(Bind.parse(s"$codeDir:/code:ro"))
-                            .withNetworkMode("chainless")
-                        )
-                        .withCmd(DockerDriver.commandForLanguage(language)*)
-                        .withWorkingDir("/code")
-                    )
-                      .map(_.getId)
-                      .timeout(30.seconds)
-                  )(removeContainer)
-            )
-        )
+    Resource
+      .pure(functionId + functionRevision.toString)
+      .flatMap(functionRevisionId =>
+        currentCachedCodeFunctionRevisionId
+          .filter(_ == functionRevisionId)
+          .void
+          .semiflatTap(_ => Logger[F].info(s"Code cache hit for functionId=$functionId revision=$functionRevision"))
+          .getOrElseF(clearLocalCodeCache >> fetchAndSave(language, functionId, functionRevision))
+          .as(tmpDir / functionRevisionId)
+          .toResource
+          .flatMap(codeDir =>
+            Async[F]
+              .delay(DockerImage.forLanguage(language))
+              .map(i =>
+                i.split(':') match {
+                  case Array(repository, tag) => (repository, tag)
+                  case Array(repository)      => (repository, "latest")
+                  case _                      => throw MatchError(i)
+                }
+              )
+              .toResource
+              .flatMap((imageRepository, imageTag) =>
+                Logger[F].info(s"Pulling $imageRepository:$imageTag").toResource >>
+                  useDockerAsync(dockerClient.pullImageCmd(imageRepository).withTag(imageTag))
+                    .timeout(2.minutes)
+                    .toResource >>
+                  Logger[F].info("Creating container").toResource >>
+                  Resource
+                    .make(
+                      useDocker(
+                        dockerClient
+                          .createContainerCmd(s"$imageRepository:$imageTag")
+                          .withEnv(s"CALLBACK_BASE_URL=$callbackBasePath" +: DockerDriver.envForLanguage(language)*)
+                          .withHostConfig(
+                            HostConfig
+                              .newHostConfig()
+                              .withBinds(Bind.parse(s"$codeDir:/code:ro"))
+                              .withNetworkMode("chainless")
+                          )
+                          .withCmd(DockerDriver.commandForLanguage(language)*)
+                          .withWorkingDir("/code")
+                      )
+                        .map(_.getId)
+                        .timeout(30.seconds)
+                    )(removeContainer)
+              )
+          )
+      )
 
   def startContainer(containerId: String): F[Unit] =
     Logger[F].info(s"Starting container=$containerId") >>
       useDocker(dockerClient.startContainerCmd(containerId)) >>
       Logger[F].info(s"Started container=$containerId")
 
-  private def currentCachedCodeFunctionId: OptionT[F, String] =
+  private def currentCachedCodeFunctionRevisionId: OptionT[F, String] =
     OptionT
       .liftF(Files[F].exists(tmpDir))
       .filter(identity)
@@ -114,11 +118,12 @@ class DockerDriver[F[_]: Async: Files](
         Files[F].createDirectories(tmpDir)
       )
 
-  private def fetchAndSave(language: Language, functionId: String): F[Unit] =
+  private def fetchAndSave(language: Language, functionId: String, revision: Int): F[Unit] =
     for {
-      _ <- Logger[F].info(s"Fetching function code for functionId=$functionId")
-      _ <- Files[F].createDirectories(tmpDir / functionId)
-      data = objectStore.get("functions")(functionId)
+      _ <- Logger[F].info(s"Fetching function code for functionId=$functionId revision=$revision")
+      codeDir = tmpDir / s"$functionId${revision.toString}"
+      _ <- Files[F].createDirectories(codeDir)
+      data = functionsStore.get(functionId)(revision)
       _ <- (language match {
         case Language.JS =>
           data
@@ -126,7 +131,7 @@ class DockerDriver[F[_]: Async: Files](
             .evalTap((name, isDirectory, data) =>
               if (isDirectory) data.compile.drain
               else
-                (tmpDir / functionId / name)
+                (codeDir / name)
                   .pure[F]
                   .flatTap(file => Logger[F].debug(s"Extracting $file"))
                   .flatTap(_.parent.traverse(Files[F].createDirectories))
@@ -136,7 +141,7 @@ class DockerDriver[F[_]: Async: Files](
             .compile
             .drain
         case Language.JVM =>
-          (tmpDir / functionId / "function.jar")
+          (codeDir / "function.jar")
             .pure[F]
             .flatTap(file => Logger[F].debug(s"Saving JAR $file"))
             .flatTap(file => data.through(Files[F].writeAll(file)).compile.drain)
@@ -193,19 +198,12 @@ class DockerDriver[F[_]: Async: Files](
       onError = (_: Throwable, _) => ().pure[F]
     )(useDocker(dockerClient.pingCmd()).void)
 
-  def prune: F[Unit] =
-    Logger[F].info("Pruning unused docker data") *>
-      useDocker(dockerClient.pruneCmd(PruneType.BUILD)) >>
-      useDocker(dockerClient.pruneCmd(PruneType.CONTAINERS)) >>
-      useDocker(dockerClient.pruneCmd(PruneType.NETWORKS)) >>
-      useDocker(dockerClient.pruneCmd(PruneType.VOLUMES)).void
-
 }
 
 object DockerDriver:
   def make[F[_]: Async](
       callbackBasePath: String,
-      functionStoreClient: ObjectStore[F],
+      functionsStore: FunctionsStore[F],
       tmpDir: Path
   ): Resource[F, DockerDriver[F]] =
     Resource
@@ -224,7 +222,7 @@ object DockerDriver:
             Resource.fromAutoCloseable(Async[F].delay(DockerClientImpl.getInstance(config, httpClient)))
           )
       )
-      .map(new DockerDriver(callbackBasePath, _, functionStoreClient, tmpDir))
+      .map(new DockerDriver(callbackBasePath, _, functionsStore, tmpDir))
       .evalTap(_.awaitDockerReady)
 
   def commandForLanguage(language: Language): List[String] =

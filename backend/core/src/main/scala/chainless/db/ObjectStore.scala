@@ -1,64 +1,43 @@
 package chainless.db
 
-import cats.data.OptionT
 import cats.effect.Async
+import cats.effect.implicits.*
 import cats.implicits.*
-import fs2.Stream
+import chainless.models.*
 import fs2.io.file.{Files, Path}
-import org.typelevel.log4cats.Logger
-import org.typelevel.log4cats.slf4j.Slf4jLogger
+import fs2.{Chunk, Stream}
 
-/** Stores byte data in a directory structure. Data is stored in "revisions", meaning if a key already exists, a new
-  * revision is added (and marked "latest") instead of deleting the old entry.
-  * @param baseDir
-  *   a base directory in which "buckets" of data are saved
-  */
-class ObjectStore[F[_]: Async: Files](baseDir: Path):
+import java.nio.charset.StandardCharsets
 
-  private given Logger[F] = Slf4jLogger.getLoggerFromName("ObjectStore")
+class BlocksStore[F[_]: Async](baseDir: Path):
+  def saveBlock(block: BlockWithChain): F[Unit] =
+    Files[F].createDirectories(baseDir / block.meta.chain.name) >>
+      Stream(block.block)
+        .map(_.noSpaces)
+        .through(fs2.text.utf8.encode)
+        .through(Files[F].writeAll(baseDir / block.meta.chain.name / block.meta.blockId))
+        .compile
+        .drain
 
-  def save(bucket: String)(id: String)(data: Stream[F, Byte]): F[Unit] =
-    Logger[F].info(s"Saving id=$id") >>
-      (baseDir / bucket / id)
-        .pure[F]
-        .flatTap(Files[F].createDirectories(_))
-        .flatMap(objectDir =>
-          OptionT(contains(objectDir))
-            .fold(0)(_ + 1)
-            .map(nextRevision => objectDir / nextRevision.toString)
-            .flatMap(file => Files[F].createFile(file) *> data.through(Files[F].writeAll(file)).compile.drain)
-        ) >>
-      Logger[F].info(s"Finished saving id=$id")
-
-  def get(bucket: String)(id: String): Stream[F, Byte] =
-    Stream
-      .eval(
-        OptionT
-          .pure[F](baseDir / bucket / id)
-          .flatMap(objectDir =>
-            OptionT(contains(objectDir))
-              .map(revision => objectDir / revision.toString)
-          )
-          .getOrRaise(new NoSuchElementException("No data"))
-      )
-      .flatMap(Files[F].readAll)
-
-  def exists(bucket: String)(id: String): F[Boolean] =
-    OptionT
-      .pure[F](baseDir / bucket / id)
-      .flatMap(objectDir => OptionT(contains(objectDir)))
-      .isDefined
-
-  def delete(bucket: String)(id: String): F[Boolean] =
-    exists(bucket)(id)
-      .flatTap(Async[F].whenA(_)(Files[F].deleteRecursively(baseDir / bucket / id)))
-
-  private def contains(objectDir: Path): F[Option[Int]] =
+  def getBlock(meta: BlockMeta): F[BlockWithChain] =
     Files[F]
-      .list(objectDir)
-      .evalFilter(Files[F].isRegularFile(_))
-      .map(_.fileName.toString.toIntOption)
-      .collect { case Some(i) => i }
+      .readAll(baseDir / meta.chain.name / meta.blockId)
       .compile
-      .fold(-1)(_.max(_))
-      .map(_.some.filter(_ >= 0))
+      .to(Chunk)
+      .map(chunk => new String(chunk.toArray[Byte], StandardCharsets.UTF_8))
+      .map(io.circe.parser.parse)
+      .rethrow
+      .map(BlockWithChain(meta, _))
+
+class FunctionsStore[F[_]: Async](baseDir: Path):
+  def get(id: String)(revision: Int): Stream[F, Byte] =
+    Files[F].readAll(baseDir / id / revision.toString)
+
+  def delete(id: String): F[Unit] =
+    Files[F].deleteRecursively(baseDir / id)
+
+  def save(id: String, revision: Int)(data: Stream[F, Byte]): F[Unit] =
+    Files[F].createDirectories(baseDir / id) >> data
+      .through(Files[F].writeAll(baseDir / id / revision.toString))
+      .compile
+      .drain

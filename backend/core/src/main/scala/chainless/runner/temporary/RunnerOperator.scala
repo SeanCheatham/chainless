@@ -12,7 +12,6 @@ import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import scala.concurrent.duration.*
-import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 /** Manages new requests to run temporary functions
@@ -27,7 +26,7 @@ import java.util.UUID
   */
 class RunnerOperator[F[_]: Async: NonEmptyParallel](
     blocksDb: BlocksDb[F],
-    blocksStore: ObjectStore[F],
+    blocksStore: BlocksStore[F],
     invocationsDb: FunctionInvocationsDb[F],
     newBlocks: Stream[F, BlockMeta]
 ):
@@ -43,7 +42,7 @@ class RunnerOperator[F[_]: Async: NonEmptyParallel](
       .flatMap(runner =>
         blocksDb
           .blocksAfterTimestamp(chains)(timestampMs)
-          .evalMap(fetchBlock)
+          .evalMap(blocksStore.getBlock)
           .evalScan((Duration.Zero, FunctionState(Map.empty, Json.Null))) {
             case ((_, stateWithChains), blockWithMeta) =>
               Async[F]
@@ -61,7 +60,7 @@ class RunnerOperator[F[_]: Async: NonEmptyParallel](
       .flatMap(runner =>
         newBlocks
           .filter(meta => chains.contains(meta.chain))
-          .evalMap(fetchBlock)
+          .evalMap(blocksStore.getBlock)
           .evalScan((Duration.Zero, stateWithChains)) { case ((_, stateWithChains), blockWithMeta) =>
             Async[F].timed(runner.applyBlock(stateWithChains, blockWithMeta))
           }
@@ -103,13 +102,3 @@ class RunnerOperator[F[_]: Async: NonEmptyParallel](
               )
             )
         )
-
-  private def fetchBlock(meta: BlockMeta): F[BlockWithChain] =
-    blocksStore
-      .get(meta.chain.name)(meta.blockId)
-      .compile
-      .to(Chunk)
-      .map(chunk => new String(chunk.toArray[Byte], StandardCharsets.UTF_8))
-      .map(io.circe.parser.parse)
-      .rethrow
-      .map(BlockWithChain(meta, _))
