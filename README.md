@@ -10,7 +10,7 @@ Smash some code into your keyboard, click submit, and watch as Chainless magical
 - Computer
 - Internet
 - Docker
-- **Bitcoin**, **Ethereum**, and **Apparatus** are currently supported. You will need **RPC** access to at least one of them.
+- You will need **RPC** access to at least one of the [Supported Blockchains](#supported-blockchains).
 - **Linux**, specifically Ubuntu, is the only "officially supported" OS. It might work elsewhere, but my soul would dissolve if I run Windows, and I'm not a billionaire so I can't afford a MacBook.
 - This service replicates all block data starting from when you first launch. This consumes a lot of **disk space**, like probably a couple million floppy disks.
 - A burning passion for minimally tested software.
@@ -51,7 +51,7 @@ Support for other languages will be added over time. If you'd like to request on
 
 ## FAQ
 - Is Chainless AI-native?
-  - No.
+  - Sure.
 
 ## Disclaimers
 - This project is still in alpha. It will move into beta/production state once there is sufficient test coverage, so it'll probably never leave alpha.
