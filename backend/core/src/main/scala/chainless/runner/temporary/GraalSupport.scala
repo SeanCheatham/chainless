@@ -68,11 +68,9 @@ object GraalSupport:
       def onString(value: String): Value = context.asValue(value)
 
       def onArray(value: Vector[Json]): Value = {
-        val arr: Array[AnyRef] = new Array(value.size)
-        value.zipWithIndex.foreach { case (j, idx) =>
-          arr.update(idx, j.asValue)
-        }
-        val x = context.asValue(ProxyArray.fromArray(arr*))
+        val list = new java.util.ArrayList[AnyRef](value.size)
+        value.foreach(j => list.add(j.asValue))
+        val x = context.asValue(list)
         x
       }
 
